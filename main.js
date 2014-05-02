@@ -1,3 +1,3 @@
 $(document).ready(function () {
-  app.init();
+  App.init();
 });
