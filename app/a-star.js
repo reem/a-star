@@ -16,9 +16,6 @@ var AStar = {};
     heuristic, // The heuristic for estimating distance to goal.
     neighborDistance // A function for calculating distance between neighbors
   ) {
-    var path = [];
-    var pathLength = 0;
-
     var cost = function (wrappedNode) {
       return heuristic(wrappedNode.node, goal) + 
         wrappedNode.pathLength;
@@ -41,10 +38,25 @@ var AStar = {};
     var current;
     while (open.peek().node.id !== goal.id) {
       current = open.deq();
-      open.delete(current.id);
+      if (!(openSet.contains(current.id))) { continue; }
+      openSet.remove(current.id);
+
       closed.insert(current.node.id);
       var currentCost = cost(current);
       current.node.edges.each(function (neighbor) {
+        var neighborCost = currentCost + 
+          neighborDistance(current.node, neighbor);
+          
+        if (openSet.contains(neighbor.id) && 
+            currentCost < neighborCost) {
+          openSet.remove(neighbor.id);
+        } else if (closed.contains(neighbor.id) &&
+                   currentCost < neighborCost) {
+          closed.remove(neighbor.id);
+        } else if (!openSet.contains(neighbor.id) &&
+                   !closed.contains(neighbor.id)) {
+          open.enq(wrappedNode(neighbor, neighborCost, current));
+        }
       });
     }
   };
