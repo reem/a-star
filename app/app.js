@@ -4,8 +4,10 @@ var App = {};
   var svg;
 
   var init = function () {
+    var graph = connectGraph(randomGraph(10));
     initSvg();
-    d3Graph(randomGraph(100));
+    d3Graph(graph);
+    d3Edges(graph);
   };
 
   exports.init = init;
@@ -15,7 +17,6 @@ var App = {};
   };
 
   var d3Graph = function (graph) {
-    console.log(graph.nodes.toList());
     var d3nodes = svg.selectAll("circle")
       .data(graph.nodes.toList());
 
@@ -32,6 +33,54 @@ var App = {};
     d3nodes.exit().remove();
   };
 
+  var d3Edges = function (graph) {
+    var edges = new Set.Set();
+    graph.nodes.each(function (from) {
+      graph.nodes.each(function (to) {
+        if (to !== from) {
+          edges.insert(new Vector.Vector(from, to));
+        }
+      });
+    });
+
+    var d3edges = svg.selectAll("line")
+      .data(edges.toList());
+
+    d3edges.enter().append("line")
+      .attr("x1", function (d) {
+        return d.x.location.x;
+      })
+      .attr("y1", function (d) {
+        return d.x.location.y;
+      })
+      .attr("x2", function (d) {
+        return d.y.location.x;
+      })
+      .attr("y2", function (d) {
+        return d.y.location.y; 
+      })
+      .style("color", "black")
+      .style("stroke", 0.1);
+
+    d3edges
+      .attr("x1", function (d) {
+        return d.x.location.x;
+      })
+      .attr("y1", function (d) {
+        return d.x.location.y;
+      })
+      .attr("x2", function (d) {
+        return d.y.location.x;
+      })
+      .attr("y2", function (d) {
+        return d.y.location.y; 
+      })
+      .style("color", "black")
+      .style("stroke", 0.1);
+
+    d3edges.exit().remove();
+  };
+
   var d3Current = function (node) {
 
   };
@@ -44,10 +93,18 @@ var App = {};
 
   };
 
+  var connectGraph = function (graph) {
+    graph.nodes.each(function (from) {
+      graph.nodes.each(function (to) {
+        from.edgeToFrom(to);
+      });
+    });
+    return graph;
+  };
+
   var randomGraph = function (size) {
     var graph = new Graph.Graph();
     _.times(size, function () {
-      console.log(graph.nodes);
       graph.addNode(new Graph.PlanarNode({
         location: {
           x: (window.innerWidth - 10)  * Math.random() + 10,
