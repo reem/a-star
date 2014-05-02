@@ -30,8 +30,12 @@ var Set = {};
     return this.filter(Utility.not(other.contains.bind(other)));
   };
 
+  Set.prototype.merge = function (other) {
+    this.intersection(other).each(this.insert.bind(this));
+  };
+
   Set.prototype.each = function (callback, context) {
-    _.each(this.toList, callback, context);
+    _.each(this.toList(), callback, context);
   };
 
   Set.prototype.filter = function (predicate, context) {

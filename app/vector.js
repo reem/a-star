@@ -50,6 +50,10 @@ var Vector = {};
     return (this.x * other.x) + (this.y * other.y);
   };
 
+  Vector.prototype.toString = function () {
+    return "Vector(" + this.x.toString() + "," + this.y.toString() + ")";
+  };
+
   exports.Vector = Vector;
 }(Vector));
 
