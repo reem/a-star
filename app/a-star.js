@@ -43,6 +43,7 @@ var AStar = {};
 
       closed.insert(current.node.id);
       var currentCost = cost(current);
+      
       current.node.edges.each(function (neighbor) {
         var neighborCost = currentCost + 
           neighborDistance(current.node, neighbor);
@@ -59,6 +60,15 @@ var AStar = {};
         }
       });
     }
+
+    var path = [];
+    var back = open.deq();
+    while (back !== null) {
+      path.push(back);
+      back = back.parent;
+    }
+    path.reverse();
+    return path;
   };
 
   exports.AStar = aStar;
