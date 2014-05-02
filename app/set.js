@@ -11,7 +11,7 @@ var Set = {};
   };
 
   Set.prototype.insert = function (key) {
-    this._storage[key] = true;
+    this._storage[key] = key;
   };
 
   Set.prototype.remove = function (key) {
@@ -38,11 +38,19 @@ var Set = {};
     return new Set(_.filter(this.toList, predicate, context));
   };
 
+  var objectValues = function (o) {
+    return _.map(Object.keys(o), function (key) {
+      return o[key];
+    });
+  };
+
   Set.prototype.toList = function () {
-    return Object.keys(this._storage);
+    return objectValues(this._storage);
   };
 
   Set.prototype.length = function () {
     return this.toList.length;
   };
+
+  exports.Set = Set;
 }(Set));

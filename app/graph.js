@@ -22,12 +22,19 @@ var Graph = {};
     this.edgeFrom(other);
   };
 
+  Node.prototype.toString = function () {
+    return "Graph(" + this.id.toString() + ")";
+  };
+
   exports.Node = Node;
 
   var PlanarNode = function PlanarNodeConstructor(config) {
     Node.call(this, config);
     this.location = new Vector.Vector(config.location.x, config.location.y);
   };
+
+  PlanarNode.prototype = Object.create(Node.prototype);
+  PlanarNode.prototype.constructor = PlanarNode;
 
   PlanarNode.prototype.distance = function PlanarNodeDistance(other) {
     return this.location.distance(other.location);
@@ -38,4 +45,10 @@ var Graph = {};
   var Graph = function (nodes) {
     this.nodes = new Set.Set(nodes);
   };
+
+  Graph.prototype.addNode = function (node) {
+    this.nodes.insert(node);
+  };
+
+  exports.Graph = Graph;
 }(Graph));
