@@ -34,4 +34,8 @@ var Graph = {};
   };
 
   exports.PlanarNode = PlanarNode;
+
+  var Graph = function (nodes) {
+    this.nodes = new Set.Set(nodes);
+  };
 }(Graph));
