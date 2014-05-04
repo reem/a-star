@@ -10,6 +10,10 @@ var Set = {};
     }
   };
 
+  Set.prototype.isEmpty = function () {
+    return Object.getOwnPropertyNames(this._storage).length === 0;
+  };
+
   Set.prototype.insert = function (key) {
     this._storage[key] = key;
   };
