@@ -8,6 +8,15 @@ var App = {};
     initSvg();
     d3Graph(graph);
     d3Edges(graph);
+    var start = graph.nodes.toList()[0];
+    var end = graph.nodes.toList()[9];
+    console.log(AStar.aStar(start, end, 
+      function (node) {
+        return node.location.distance(end.location);
+      },
+      function (node, other) {
+        return node.location.distance(other.location);
+      }));
   };
 
   exports.init = init;
@@ -37,7 +46,7 @@ var App = {};
     var edges = new Set.Set();
     graph.nodes.each(function (from) {
       graph.nodes.each(function (to) {
-        if (to !== from) {
+        if (from.edges.contains(to)) {
           edges.insert(new Vector.Vector(from, to));
         }
       });
@@ -46,21 +55,7 @@ var App = {};
     var d3edges = svg.selectAll("line")
       .data(edges.toList());
 
-    d3edges.enter().append("line")
-      .attr("x1", function (d) {
-        return d.x.location.x;
-      })
-      .attr("y1", function (d) {
-        return d.x.location.y;
-      })
-      .attr("x2", function (d) {
-        return d.y.location.x;
-      })
-      .attr("y2", function (d) {
-        return d.y.location.y; 
-      })
-      .style("color", "black")
-      .style("stroke", 0.1);
+    d3edges.enter().append("line");
 
     d3edges
       .attr("x1", function (d) {
@@ -75,8 +70,7 @@ var App = {};
       .attr("y2", function (d) {
         return d.y.location.y; 
       })
-      .style("color", "black")
-      .style("stroke", 0.1);
+      .style("stroke", "rgb(6,120,155)");
 
     d3edges.exit().remove();
   };
@@ -96,7 +90,10 @@ var App = {};
   var connectGraph = function (graph) {
     graph.nodes.each(function (from) {
       graph.nodes.each(function (to) {
-        from.edgeToFrom(to);
+        if (from.location.distance(to.location) < 400 &&
+            from !== to) {
+          from.edgeToFrom(to);
+        }
       });
     });
     return graph;
