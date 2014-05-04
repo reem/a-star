@@ -1,4 +1,4 @@
-/* globals Post*/
+/* globals Post, console*/
 var AStar = {};
 
 (function (exports) {
@@ -15,6 +15,8 @@ var AStar = {};
     var start = nodes[startIndex];
     var goal = nodes[goalIndex];
 
+    var color = function (node) { node.color = true; };
+
     var queue = {storage: {}, low: 0, high: 0};
     queue.push = function (val) {
       this.storage[this.high++] = val;
@@ -22,20 +24,73 @@ var AStar = {};
     queue.pop = function (val) {
       return this.storage[this.low++];
     };
+    queue.peek = function () {
+      return this.storage[this.low];
+    };
+    queue.size = function () {
+      return this.high - this.low;
+    };
 
     queue.push(start);
+    var inQueue = new Set.Set();
+    inQueue.insert(start);
 
-    while(queue.storage[queue.low] !== goal) {
-      var current = queue.pop();
-      Post.post('current', current);
-      current.edges.each(function (neighbor) {
-        Post.post('neighbor', neighbor);
-        queue.push(neighbor);
-      });
-    }
-    Post.post('current', queue.pop());
+    var timer = setInterval(function () {
+      if (queue.peek() === goal) {
+        clearInterval(timer);
+        Post.post('current', queue.pop());
+        return;
+      } else {
+        var current = queue.pop();
+        inQueue.remove(current);
+        color(current);
+        Post.post('current', current);
+        Post.post('graph', graph);
+        current.edges.each(function (neighbor) {
+          if (!('color' in neighbor)) {
+            Post.post('neighbor', neighbor);
+            if (!(inQueue.contains(neighbor))) {
+              queue.push(neighbor);
+              inQueue.insert(neighbor);
+            }
+          }
+        });
+      }
+    }, 100);
   };
+
   exports.BFS = BFS;
+
+  var greedy = function greedy(graph, startIndex, goalIndex) {
+    var nodes = graph.nodes.toList();
+    var current = nodes[startIndex];
+    var goal = nodes[goalIndex];
+
+    var timer = setInterval(function () {
+      if (current === goal) {
+        clearInterval(timer);
+        Post.post('current', current);
+      } else {
+        var neighbors = current.edges.toList();
+        var next = neighbors[0];
+        for (var i = 1; i < neighbors.length; i++) {
+          var neighbor = neighbors[i];
+          if ('color' in neighbor) {
+            continue;
+          }
+          if (goal.location.distance(neighbor.location) < goal.location.distance(next.location)) {
+            next = neighbor;
+          }
+        }
+        current = next;
+        current.color = true;
+        Post.post('graph', graph);
+        Post.post('current', current);
+      }
+    }, 500);
+  };
+
+  exports.greedy = greedy;
 
 //  var aStar = function aStar(
 //    // => an optimal path from start to goal, as a list of nodes
