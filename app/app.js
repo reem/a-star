@@ -1,22 +1,20 @@
+/* globals AStar, d3, console, Post, Graph, Vector, _, window */
 var App = {};
 
 (function (exports) {
   var svg;
 
   var init = function () {
-    var graph = connectGraph(randomGraph(10));
+    var graph = connectGraph(randomGraph(1000));
     initSvg();
     d3Graph(graph);
     d3Edges(graph);
-    var start = graph.nodes.toList()[0];
-    var end = graph.nodes.toList()[9];
-    console.log(AStar.aStar(start, end, 
-      function (node) {
-        return node.location.distance(end.location);
-      },
-      function (node, other) {
-        return node.location.distance(other.location);
-      }));
+
+    Post.register('current', d3Current);
+    Post.register('neighbor', d3Neighbor);
+    Post.register('graph', d3Graph);
+
+    AStar.greedy(graph, 0, 999);
   };
 
   exports.init = init;
@@ -29,15 +27,29 @@ var App = {};
     var d3nodes = svg.selectAll("circle")
       .data(graph.nodes.toList());
 
-    d3nodes.enter().append("circle")
-      .attr("cx", function (d) { return d.location.x; })
-      .attr("cy", function (d) { return d.location.y; })
-      .attr("r", 4);
+    d3nodes.enter().append("circle");
 
     d3nodes
       .attr("cx", function (d) { return d.location.x; })
       .attr("cy", function (d) { return d.location.y; })
-      .attr("r", 4);
+      .attr("r",  function (d) {
+        if (d.id === 0) {
+          return 5;
+        } else if (d.id === 999) {
+          return 5;
+        } else {
+          return 5;
+        }
+      })
+      .style("fill", function (d) {
+        if (d.id === 999) {
+          return "red";
+        } else {
+          if ('color' in d) {
+            return "green";
+          }
+        }
+      });
 
     d3nodes.exit().remove();
   };
@@ -68,7 +80,7 @@ var App = {};
         return d.y.location.x;
       })
       .attr("y2", function (d) {
-        return d.y.location.y; 
+        return d.y.location.y;
       })
       .style("stroke", "rgb(6,120,155)");
 
@@ -76,21 +88,41 @@ var App = {};
   };
 
   var d3Current = function (node) {
+    var d3node = svg.select('circle').data([node]);
 
+    d3node.enter().append('circle');
+
+    d3node
+      .attr("cx", function (d) {
+        return d.location.x;
+      })
+      .attr("cy", function (d) {
+        return d.location.y;
+      })
+      .attr("r", 10)
+      .style("fill", "orange");
   };
 
-  var d3Neighbor = function (neighbors) {
+  var d3Neighbor = function (neighbor) {
+    var d3node = svg.select('circle').data([neighbor]);
 
-  };
+    d3node.enter().append('circle');
 
-  var d3CurrentNeighbor = function (currentNieghbor) {
-
+    d3node
+      .attr("cx", function (d) {
+        return d.location.x;
+      })
+      .attr("cy", function (d) {
+        return d.location.y;
+      })
+      .attr("r", 10)
+      .style("fill", "green");
   };
 
   var connectGraph = function (graph) {
     graph.nodes.each(function (from) {
       graph.nodes.each(function (to) {
-        if (from.location.distance(to.location) < 400 &&
+        if (from.location.distance(to.location) < 50 &&
             from !== to) {
           from.edgeToFrom(to);
         }
@@ -104,9 +136,9 @@ var App = {};
     _.times(size, function () {
       graph.addNode(new Graph.PlanarNode({
         location: {
-          x: (window.innerWidth - 10)  * Math.random() + 10,
-          y: (window.innerHeight - 10) * Math.random() + 10,
-        } 
+          x: (window.innerWidth - 100)  * Math.random() + 50,
+          y: (window.innerHeight - 100) * Math.random() + 50,
+        }
       }));
     });
     return graph;
