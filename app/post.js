@@ -2,26 +2,56 @@
 var Post = {};
 
 (function (exports) {
-  var registered = {};
-
-  var register = function (name, callback) {
-    if (name in registered) {
-      registered[name].push(callback);
-    } else {
-      registered[name] = [callback];
-    }
+  var Event = function (name, value) {
+    this.name = name;
+    this.value = value;
   };
 
-  var post = function (name, value) {
-    return reverseMap(registered[name], value);
+  var EventManager = function (wait) {
+    this.registered = {};
+    this.queue = new Queue.Queue();
+    this.wait = waitTime;
   };
 
-  var reverseMap = function (funcList, val) {
-    return _.map(funcList, function (func) {
-      return func(val);
+  EventManager.prototype.init = function() {
+    this.timerID = setInterval(function () {
+      if (queue.length !== 0) {
+        this.unsafeFire(this.queue.dequeue());
+      }
+    }, this.wait);
+  };
+
+  EventManager.prototype.post = function (name, value) {
+    this.queue.enqueue(new Event(name, value));
+  };
+
+  EventManager.prototype.register = function (name, callback) {
+    if (name in this.registered)
+      this.registered[name].push(callback);
+    else
+      this.registered[name] = [callback];
+  };
+
+  EventManager.prototype.end = function() {
+    clearInterval(this.timerID);
+  };
+
+  EventManager.prototype.setWaitTime = function (newTime) {
+    this.end();
+    this.wait = newTime;
+    this.init();
+  };
+
+  EventManager.prototype.unsafeFire = function (event) {
+    // Fires an event immediately, circumventing the queue.
+    _.each(this.registered[event.name], function (callback) {
+      callback(event.value);
+    });
+
+    _.each(this.registered.all, function (callback) {
+      callback(event.name, event.value);
     });
   };
 
-  exports.post = post;
-  exports.register = register;
+  exports.EventManager = EventManager;
 }(Post));
