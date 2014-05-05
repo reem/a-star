@@ -13,8 +13,9 @@ var App = {};
     Post.register('current', d3Current);
     Post.register('neighbor', d3Neighbor);
     Post.register('graph', d3Graph);
+    Post.register('edge', d3CurrentEdge);
 
-    AStar.greedy(graph, 0, 999);
+    AStar.BFS(graph, 0, 999);
   };
 
   exports.init = init;
@@ -117,6 +118,30 @@ var App = {};
       })
       .attr("r", 10)
       .style("fill", "green");
+  };
+
+  var d3CurrentEdge = function (edge) {
+    var d3edge = svg.select("line")
+      .data([edge]);
+
+    d3edge.enter().append("line");
+
+    d3edge
+      .attr("x1", function (d) {
+        return d.x.location.x;
+      })
+      .attr("y1", function (d) {
+        return d.x.location.y;
+      })
+      .attr("x2", function (d) {
+        return d.y.location.x;
+      })
+      .attr("y2", function (d) {
+        return d.y.location.y;
+      })
+      .style("stroke", "rgb(255,0,0)");
+
+    d3edge.exit().remove();
   };
 
   var connectGraph = function (graph) {

@@ -49,6 +49,7 @@ var AStar = {};
         current.edges.each(function (neighbor) {
           if (!('color' in neighbor)) {
             Post.post('neighbor', neighbor);
+            Post.post('edge', new Vector.Vector(current, neighbor));
             if (!(inQueue.contains(neighbor))) {
               queue.push(neighbor);
               inQueue.insert(neighbor);
