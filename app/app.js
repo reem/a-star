@@ -37,7 +37,7 @@ var App = {};
         if (d.id === 0) {
           return 5;
         } else if (d.id === 999) {
-          return 5;
+          return 10;
         } else {
           return 5;
         }
@@ -100,7 +100,7 @@ var App = {};
       .attr("cy", function (d) {
         return d.location.y;
       })
-      .attr("r", 10)
+      .attr("r", 12)
       .style("fill", "orange");
   };
 
