@@ -8,7 +8,9 @@ var Queue = {};
   };
 
   Queue.fromArray = function (arr) {
-    _.each(arr, this.insert.bind(this));
+    var res = new Queue();
+    _.each(arr, res.insert.bind(res));
+    return res;
   };
 
   Queue.prototype.enqueue = function (val) {
