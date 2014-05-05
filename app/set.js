@@ -3,10 +3,9 @@ var Set = {};
 (function (exports) {
   var Set = function (keys) {
     this._storage = {};
+    this.length = 0;
     if (keys) {
-      _.each(keys, function (key) {
-        this._storage[key] = true;
-      });
+      _.each(keys, this.insert.bind(this));
     }
   };
 
@@ -16,10 +15,12 @@ var Set = {};
 
   Set.prototype.insert = function (key) {
     this._storage[key] = key;
+    this.length++;
   };
 
   Set.prototype.remove = function (key) {
     delete this._storage[key];
+    this.length--;
   };
 
   Set.prototype.contains = function (key) {
@@ -54,10 +55,6 @@ var Set = {};
 
   Set.prototype.toList = function () {
     return objectValues(this._storage);
-  };
-
-  Set.prototype.length = function () {
-    return this.toList.length;
   };
 
   exports.Set = Set;
