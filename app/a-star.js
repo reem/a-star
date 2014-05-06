@@ -47,35 +47,36 @@ var AStar = {};
 
   exports.BFS = BFS;
 
-  // var greedy = function greedy(graph, startIndex, goalIndex) {
-  //   var nodes = graph.nodes.toList();
-  //   var current = nodes[startIndex];
-  //   var goal = nodes[goalIndex];
+  var greedy = function greedy(graph, startIndex, goalIndex, eventer) {
+    var nodes = graph.nodes.toList();
+    var current = nodes[startIndex];
+    var goal = nodes[goalIndex];
 
-  //   var timer = setInterval(function () {
-  //     if (current === goal) {
-  //       clearInterval(timer);
-  //       Post.post('current', current);
-  //     } else {
-  //       var neighbors = _.filter(current.edges.toList(), function (neighbor) {
-  //         return !('color' in neighbor);
-  //       });
-  //       var next = neighbors[0];
-  //       for (var i = 1; i < neighbors.length; i++) {
-  //         var neighbor = neighbors[i];
-  //         if (goal.location.distance(neighbor.location) < goal.location.distance(next.location)) {
-  //           next = neighbor;
-  //         }
-  //       }
-  //       current = next;
-  //       current.color = true;
-  //       Post.post('graph', graph);
-  //       Post.post('current', current);
-  //     }
-  //   }, 500);
-  // };
+    var visited = function (node) { return node.visited; };
+    var path = [];
 
-  // exports.greedy = greedy;
+    while (current !== goal) {
+      current.visited = true;
+      current.current = false;
+      var neighbors = _.reject(current.edges.toList(), visited);
+      var next = neighbors[0];
+      for (var i = 1; i < neighbors.length; i++) {
+        var neighbor = neighbors[i];
+        if (goal.location.distance(neighbor.location) < goal.location.distance(next.location)) {
+          next = neighbor;
+        }
+      }
+      path.push(current);
+      current.onPath = true;
+      current = next;
+      current.current = true;
+      eventer.post('graph', graph);
+    }
+    path.push(goal);
+    return path;
+  };
+
+  exports.greedy = greedy;
 
   var DFS = function DFS(graph, startIndex, goalIndex, eventer) {
     var nodes = graph.nodes.toList();
