@@ -2,96 +2,105 @@
 var AStar = {};
 
 (function (exports) {
-  var wrapNode = function (node, pathLength, parent) {
-    return {
-      node: node,
-      pathLength: pathLength,
-      parent: parent
-    };
-  };
-
-  var BFS = function BFS(graph, startIndex, goalIndex) {
+  var BFS = function BFS(graph, startIndex, goalIndex, eventer) {
     var nodes = graph.nodes.toList();
     var start = nodes[startIndex];
     var goal = nodes[goalIndex];
 
     var color = function (node) { node.color = true; };
 
-    var queue = {storage: {}, low: 0, high: 0};
-    queue.push = function (val) {
-      this.storage[this.high++] = val;
-    };
-    queue.pop = function (val) {
-      return this.storage[this.low++];
-    };
-    queue.peek = function () {
-      return this.storage[this.low];
-    };
-    queue.size = function () {
-      return this.high - this.low;
-    };
-
-    queue.push(start);
+    var queue = new Queue.Queue();
+    queue.enqueue(start);
     var inQueue = new Set.Set();
     inQueue.insert(start);
 
-    var timer = setInterval(function () {
-      if (queue.peek() === goal) {
-        clearInterval(timer);
-        Post.post('current', queue.pop());
-        return;
-      } else {
-        var current = queue.pop();
-        inQueue.remove(current);
-        color(current);
-        Post.post('current', current);
-        Post.post('graph', graph);
-        current.edges.each(function (neighbor) {
-          if (!('color' in neighbor)) {
-            Post.post('neighbor', neighbor);
-            Post.post('edge', new Vector.Vector(current, neighbor));
-            if (!(inQueue.contains(neighbor))) {
-              queue.push(neighbor);
-              inQueue.insert(neighbor);
-            }
+    var current;
+    while (queue.peek() !== goal && queue.length() !== 0) {
+      current = queue.dequeue();
+      inQueue.remove(current);
+      current.visited = true;
+      current.current = true;
+      eventer.post('graph', graph);
+      current.edges.each(function (neighbor) {
+        if (!neighbor.visited) {
+          if (!(inQueue.contains(neighbor))) {
+            neighbor.parent = current;
+            queue.enqueue(neighbor);
+            inQueue.insert(neighbor);
           }
-        });
-      }
-    }, 100);
+        }
+      });
+      current.current = false;
+    }
+    if (queue.peek() === goal) {
+      goal.current = true;
+    }
+
+    var path = [];
+    while (goal) {
+      path.push(goal);
+      goal.onPath = true;
+      goal = goal.parent;
+    }
+    return path;
   };
 
   exports.BFS = BFS;
 
-  var greedy = function greedy(graph, startIndex, goalIndex) {
+  // var greedy = function greedy(graph, startIndex, goalIndex) {
+  //   var nodes = graph.nodes.toList();
+  //   var current = nodes[startIndex];
+  //   var goal = nodes[goalIndex];
+
+  //   var timer = setInterval(function () {
+  //     if (current === goal) {
+  //       clearInterval(timer);
+  //       Post.post('current', current);
+  //     } else {
+  //       var neighbors = _.filter(current.edges.toList(), function (neighbor) {
+  //         return !('color' in neighbor);
+  //       });
+  //       var next = neighbors[0];
+  //       for (var i = 1; i < neighbors.length; i++) {
+  //         var neighbor = neighbors[i];
+  //         if (goal.location.distance(neighbor.location) < goal.location.distance(next.location)) {
+  //           next = neighbor;
+  //         }
+  //       }
+  //       current = next;
+  //       current.color = true;
+  //       Post.post('graph', graph);
+  //       Post.post('current', current);
+  //     }
+  //   }, 500);
+  // };
+
+  // exports.greedy = greedy;
+
+  var DFS = function DFS(graph, startIndex, goalIndex, eventer) {
     var nodes = graph.nodes.toList();
-    var current = nodes[startIndex];
     var goal = nodes[goalIndex];
 
-    var timer = setInterval(function () {
-      if (current === goal) {
-        clearInterval(timer);
-        Post.post('current', current);
-      } else {
-        var neighbors = current.edges.toList();
-        var next = neighbors[0];
-        for (var i = 1; i < neighbors.length; i++) {
-          var neighbor = neighbors[i];
-          if ('color' in neighbor) {
-            continue;
+    var DFSHelper = function DFSHelper(current) {
+      eventer.post('current', current);
+      current.visited = true;
+      current.current = true;
+      eventer.post('graph', graph);
+      if (current.id !== goal.id) {
+        current.current = false;
+        current.edges.each(function (neighbor) {
+          if (!neighbor.visited) {
+            neighbor.parent = current;
+            DFSHelper(neighbor);
           }
-          if (goal.location.distance(neighbor.location) < goal.location.distance(next.location)) {
-            next = neighbor;
-          }
-        }
-        current = next;
-        current.color = true;
-        Post.post('graph', graph);
-        Post.post('current', current);
+        });
       }
-    }, 500);
+    };
+
+    DFSHelper(nodes[startIndex]);
   };
 
-  exports.greedy = greedy;
+  exports.DFS = DFS;
 
 //  var aStar = function aStar(
 //    // => an optimal path from start to goal, as a list of nodes
