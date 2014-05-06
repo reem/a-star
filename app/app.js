@@ -3,31 +3,28 @@ var App = {};
 
 (function (exports) {
   var svg;
-  var size = 1000;
+  var size = 500;
   var source = 0;
   var goal = size - 1;
-  var maxEdgeDistance = 50;
+  var maxEdgeDistance = 80;
   var maxEdges = 10;
 
   var init = function () {
     var graph = connectGraph(randomGraph(size));
     initSvg();
-    d3Graph(graph);
     d3Edges(graph);
+    d3Graph(graph);
 
     var eventer = new Post.EventManager(200);
     // eventer.register('current', d3Current);
     // eventer.register('neighbor', d3Neighbor);
     eventer.register('graph', d3Graph);
-    eventer.register('all', function (a, b) {
-      console.log(a, b);
-    });
     eventer.init();
     // eventer.register('edge', d3CurrentEdge);
 
     AStar.greedy(graph, source, goal, eventer);
-    // AStar.BFS(graph, source, goal, eventer);
-    // AStar.DFS(graph, source, goal, eventer);
+    //AStar.BFS(graph, source, goal, eventer);
+    //AStar.DFS(graph, source, goal, eventer);
   };
 
   exports.init = init;
@@ -50,6 +47,8 @@ var App = {};
           return 10;
         } else if (d.id === goal) {
           return 10;
+        } else if (d.current) {
+          return 10;
         } else {
           return 5;
         }
@@ -66,7 +65,7 @@ var App = {};
           } else if (d.onPath) {
             return "blue";
           } else if (d.visited) {
-            return "green";
+            return "orange";
           } else {
             return "black";
           }

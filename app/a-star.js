@@ -20,7 +20,7 @@ var AStar = {};
       inQueue.remove(current);
       current.visited = true;
       current.current = true;
-      eventer.post('graph', graph);
+      eventer.post('graph', Utility.deepCopy(graph));
       current.edges.each(function (neighbor) {
         if (!neighbor.visited) {
           if (!(inQueue.contains(neighbor))) {
@@ -42,6 +42,7 @@ var AStar = {};
       goal.onPath = true;
       goal = goal.parent;
     }
+    eventer.post('graph', Utility.deepCopy(graph));
     return path;
   };
 
@@ -70,7 +71,7 @@ var AStar = {};
       current.onPath = true;
       current = next;
       current.current = true;
-      eventer.post('graph', graph);
+      eventer.post('graph', Utility.deepCopy(graph));
     }
     path.push(goal);
     return path;
@@ -86,7 +87,7 @@ var AStar = {};
       eventer.post('current', current);
       current.visited = true;
       current.current = true;
-      eventer.post('graph', graph);
+      eventer.post('graph', Utility.deepCopy(graph));
       if (current.id !== goal.id) {
         current.current = false;
         current.edges.each(function (neighbor) {
