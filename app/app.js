@@ -3,19 +3,31 @@ var App = {};
 
 (function (exports) {
   var svg;
+  var size = 1000;
+  var source = 0;
+  var goal = size - 1;
+  var maxEdgeDistance = 50;
+  var maxEdges = 10;
 
   var init = function () {
-    var graph = connectGraph(randomGraph(1000));
+    var graph = connectGraph(randomGraph(size));
     initSvg();
     d3Graph(graph);
     d3Edges(graph);
 
-    Post.register('current', d3Current);
-    Post.register('neighbor', d3Neighbor);
-    Post.register('graph', d3Graph);
-    Post.register('edge', d3CurrentEdge);
+    var eventer = new Post.EventManager(200);
+    // eventer.register('current', d3Current);
+    // eventer.register('neighbor', d3Neighbor);
+    eventer.register('graph', d3Graph);
+    eventer.register('all', function (a, b) {
+      console.log(a, b);
+    });
+    eventer.init();
+    // eventer.register('edge', d3CurrentEdge);
 
-    AStar.BFS(graph, 0, 999);
+    AStar.greedy(graph, source, goal, eventer);
+    // AStar.BFS(graph, source, goal, eventer);
+    // AStar.DFS(graph, source, goal, eventer);
   };
 
   exports.init = init;
@@ -34,20 +46,29 @@ var App = {};
       .attr("cx", function (d) { return d.location.x; })
       .attr("cy", function (d) { return d.location.y; })
       .attr("r",  function (d) {
-        if (d.id === 0) {
-          return 5;
-        } else if (d.id === 999) {
+        if (d.id === source) {
+          return 10;
+        } else if (d.id === goal) {
           return 10;
         } else {
           return 5;
         }
       })
       .style("fill", function (d) {
-        if (d.id === 999) {
-          return "red";
+        if (d.id === goal) {
+          if (d.current)
+            return "blue";
+          else
+            return "red";
         } else {
-          if ('color' in d) {
+          if (d.current) {
+            return "orange";
+          } else if (d.onPath) {
+            return "blue";
+          } else if (d.visited) {
             return "green";
+          } else {
+            return "black";
           }
         }
       });
@@ -111,10 +132,10 @@ var App = {};
 
     d3node
       .attr("cx", function (d) {
-        return d.location.x;
+        return d.node.location.x;
       })
       .attr("cy", function (d) {
-        return d.location.y;
+        return d.node.location.y;
       })
       .attr("r", 10)
       .style("fill", "green");
@@ -147,8 +168,9 @@ var App = {};
   var connectGraph = function (graph) {
     graph.nodes.each(function (from) {
       graph.nodes.each(function (to) {
-        if (from.location.distance(to.location) < 50 &&
-            from !== to) {
+        if (from.location.distance(to.location) < maxEdgeDistance &&
+            from !== to && from.edges.length < maxEdges &&
+            to.edges.length < maxEdges) {
           from.edgeToFrom(to);
         }
       });
