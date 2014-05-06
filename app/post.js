@@ -10,15 +10,15 @@ var Post = {};
   var EventManager = function (wait) {
     this.registered = {};
     this.queue = new Queue.Queue();
-    this.wait = waitTime;
+    this.wait = wait;
   };
 
   EventManager.prototype.init = function() {
     this.timerID = setInterval(function () {
-      if (queue.length !== 0) {
+      if (this.queue.length() !== 0) {
         this.unsafeFire(this.queue.dequeue());
       }
-    }, this.wait);
+    }.bind(this), this.wait);
   };
 
   EventManager.prototype.post = function (name, value) {
