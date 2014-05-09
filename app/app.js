@@ -22,8 +22,8 @@ var App = {};
     eventer.init();
     // eventer.register('edge', d3CurrentEdge);
 
-    AStar.greedy(graph, source, goal, eventer);
-    //AStar.BFS(graph, source, goal, eventer);
+    //AStar.greedy(graph, source, goal, eventer);
+    AStar.BFS(graph, source, goal, eventer);
     //AStar.DFS(graph, source, goal, eventer);
   };
 

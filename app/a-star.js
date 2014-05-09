@@ -15,35 +15,38 @@ var AStar = {};
     inQueue.insert(start);
 
     var current;
-    while (queue.peek() !== goal && queue.length() !== 0) {
-      current = queue.dequeue();
-      inQueue.remove(current);
-      current.visited = true;
-      current.current = true;
-      eventer.post('graph', Utility.deepCopy(graph));
-      current.edges.each(function (neighbor) {
-        if (!neighbor.visited) {
-          if (!(inQueue.contains(neighbor))) {
-            neighbor.parent = current;
-            queue.enqueue(neighbor);
-            inQueue.insert(neighbor);
-          }
+    var timer = setInterval(function () {
+      if (!(queue.peek() !== goal && queue.length !== 0)) {
+        clearInterval(timer);
+        var path = [];
+        while (goal) {
+          path.push(goal);
+          goal.onPath = true;
+          goal = goal.parent;
         }
-      });
-      current.current = false;
-    }
-    if (queue.peek() === goal) {
-      goal.current = true;
-    }
-
-    var path = [];
-    while (goal) {
-      path.push(goal);
-      goal.onPath = true;
-      goal = goal.parent;
-    }
-    eventer.post('graph', Utility.deepCopy(graph));
-    return path;
+        eventer.post('graph', Utility.deepCopy(graph));
+        return;
+      } else {
+        current = queue.dequeue();
+        inQueue.remove(current);
+        current.visited = true;
+        current.current = true;
+        eventer.post('graph', Utility.deepCopy(graph));
+        current.edges.each(function (neighbor) {
+          if (!neighbor.visited) {
+            if (!(inQueue.contains(neighbor))) {
+              neighbor.parent = current;
+              queue.enqueue(neighbor);
+              inQueue.insert(neighbor);
+            }
+          }
+        });
+        current.current = false;
+      }
+      if (queue.peek() === goal) {
+        goal.current = true;  
+        }
+    }, 0);
   };
 
   exports.BFS = BFS;
