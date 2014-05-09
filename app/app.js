@@ -7,6 +7,7 @@ var App = {};
   var goal = size - 1;
   var maxEdgeDistance = 80;
   var maxEdges = 10;
+  var padding = 50; 
 
   var init = function () {
     var locations = randomGraphLocations();
@@ -25,10 +26,6 @@ var App = {};
           ))),
       _.partial(animateGraphState, size, locations),
       150);
-
-    //AStar.greedy(graph, source, goal, eventer);
-    AStar.BFS(graph, source, goal, eventer);
-    //AStar.DFS(graph, source, goal, eventer);
   };
 
   exports.init = init;
@@ -39,10 +36,9 @@ var App = {};
       return;
     } else {
       animationFunc(mori.first(animations));
-      setTimeout(_.partial(animate,
-                          mori.rest(animations),
-                          animationFunc,
-                          time));
+      setTimeout(_.partial(
+        animate, mori.rest(animations),
+        animationFunc, time));
     }
   };
 
@@ -106,6 +102,38 @@ var App = {};
     this.heuristic = heuristic;
     this.neighborDistance = neighborDistance;
     this.visited = visited;
+  };
+
+  var randomGraphLocations = function (size) {
+    return d3.range(size).map(function () {
+      return new Vector.Vector(
+        between(padding, window.innerWidth - padding),
+        between(padding, window.innerHeight - padding));
+    });
+  };
+
+  var randomConnectedGraph = function (size, locations) {
+    var connections = pack(size);
+
+    _.times(size, function (id) {
+      pack[id] = undefined; // TODO: Implement edges. 
+    });
+
+    return function (id) {
+      return connections.get(id);
+    };
+  };
+
+  var between = function (min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  };
+
+  var pack = function (length, pack) {
+    var results = [];
+    for (var i = 0; i < length; i++) {
+      results.push(pack);
+    }
+    return results;
   };
 
 //   var d3Graph = function (graph) {
