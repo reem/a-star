@@ -136,81 +136,6 @@ var App = {};
     return results;
   };
 
-//   var d3Graph = function (graph) {
-//     var d3nodes = svg.selectAll("circle")
-//       .data(graph.nodes.toList());
-
-//     d3nodes.enter().append("circle");
-
-//     d3nodes
-//       .attr("cx", function (d) { return d.location.x; })
-//       .attr("cy", function (d) { return d.location.y; })
-//       .attr("r",  function (d) {
-//         if (d.id === source) {
-//           return 10;
-//         } else if (d.id === goal) {
-//           return 10;
-//         } else if (d.current) {
-//           return 10;
-//         } else {
-//           return 5;
-//         }
-//       })
-//       .style("fill", function (d) {
-//         if (d.id === goal) {
-//           if (d.current)
-//             return "blue";
-//           else
-//             return "red";
-//         } else {
-//           if (d.current) {
-//             return "orange";
-//           } else if (d.onPath) {
-//             return "blue";
-//           } else if (d.visited) {
-//             return "orange";
-//           } else {
-//             return "black";
-//           }
-//         }
-//       });
-
-//     d3nodes.exit().remove();
-//   };
-
-//   var d3Edges = function (graph) {
-//     var edges = new Set.Set();
-//     graph.nodes.each(function (from) {
-//       graph.nodes.each(function (to) {
-//         if (from.edges.contains(to)) {
-//           edges.insert(new Vector.Vector(from, to));
-//         }
-//       });
-//     });
-
-//     var d3edges = svg.selectAll("line")
-//       .data(edges.toList());
-
-//     d3edges.enter().append("line");
-
-//     d3edges
-//       .attr("x1", function (d) {
-//         return d.x.location.x;
-//       })
-//       .attr("y1", function (d) {
-//         return d.x.location.y;
-//       })
-//       .attr("x2", function (d) {
-//         return d.y.location.x;
-//       })
-//       .attr("y2", function (d) {
-//         return d.y.location.y;
-//       })
-//       .style("stroke", "rgb(6,120,155)");
-
-//     d3edges.exit().remove();
-//   };
-
 //   var connectGraph = function (graph) {
 //     graph.nodes.each(function (from) {
 //       graph.nodes.each(function (to) {
@@ -220,19 +145,6 @@ var App = {};
 //           from.edgeToFrom(to);
 //         }
 //       });
-//     });
-//     return graph;
-//   };
-
-//   var randomGraph = function (size) {
-//     var graph = new Graph.Graph();
-//     _.times(size, function () {
-//       graph.addNode(new Graph.PlanarNode({
-//         location: {
-//           x: (window.innerWidth - 100)  * Math.random() + 50,
-//           y: (window.innerHeight - 100) * Math.random() + 50,
-//         }
-//       }));
 //     });
 //     return graph;
 //   };
