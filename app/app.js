@@ -9,6 +9,7 @@ var App = {};
   var maxEdges = 10;
 
   var init = function () {
+    var locations = randomGraphLocations();
     animate(
       mori.take_while(
         notNull,
@@ -16,12 +17,13 @@ var App = {};
           stepAStar,
           startAStarState(
             size,
+            locations,
             source,
             goal,
             heuristic, // TODO: Implement
             neighborDistance // TODO: Implement
           ))),
-      _.partial(animateGraphState, size),
+      _.partial(animateGraphState, size, locations),
       150);
 
     //AStar.greedy(graph, source, goal, eventer);
@@ -46,14 +48,46 @@ var App = {};
 
   var notNull = function (x) { return x !== null; };
 
-  var animateGraphState = function (size, graphState) {
+  var animateGraphState = function (size, locations, graphState) {
+    var d3Ids = d3.selectAll("circle").data(d3.range(size));
 
+    d3Ids.enter().append("circle");
+
+    d3Ids
+      .attr("cx", function (id) {
+        return locations[id].x;
+      })
+      .attr("cy", function (id) {
+        return locations[id].y;
+      })
+      .attr("r", function (id) {
+        if (graphState.current === id) {
+          return 10;
+        } else if (graphState.goal === id) {
+          return 10;
+        } else {
+          return 5;
+        }
+      })
+      .style("fill", function (id) {
+        if (graphState.current === id) {
+          return "orange";
+        } else if (mori.has_key(graphState.visited, id)) {
+          return "green";
+        } else if (graphState.goal === id) {
+          return "red";
+        } else {
+          return "blue";
+        }
+      });
+
+    d3Ids.exit().remove();
   };
 
   var startAStarState = function (
-      size, start, goal, heuristic, neighborDistance) {
+      size, locations, start, goal, heuristic, neighborDistance) {
     return new AStarState(
-      randomConnectedGraph(size),
+      randomConnectedGraph(size, locations),
       start, goal, heuristic, neighborDistance,
       mori.sorted_set(), mori.set()
     );
@@ -174,4 +208,4 @@ var App = {};
 //     });
 //     return graph;
 //   };
-// }(App));
+}(App));
