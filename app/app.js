@@ -14,11 +14,11 @@ var App = {};
   var init = function () {
     initSvg();
     var locations = randomGraphLocations(size);
-    animate(
+    animate( // While not done animate a-star
       mori.take_while(
-        notNull,
+        notDone,
         mori.iterate(
-          stepAStar,
+          stepAStar, // Steps the algorithm
           startAStarState(
             size, // Size
             locations, // Locations array - not passed to a-star
@@ -31,8 +31,8 @@ var App = {};
               return locations[self].distance(locations[other]);
             }
           ))),
-      _.partial(animateGraphState, size, locations),
-      150);
+      _.partial(animateGraphState, size, locations), // Animator
+      150); // Wait time
   };
 
   exports.init = init;
@@ -48,7 +48,9 @@ var App = {};
     }
   };
 
-  var notNull = function (x) { return x !== null; };
+  var notDone = function (x) { 
+    return x !== null && x.end !== null; 
+  };
 
   var animateGraphState = function (size, locations, graphState) {
     var d3Ids = svg.selectAll("circle").data(d3.range(size));
@@ -93,22 +95,45 @@ var App = {};
     return new AStarState(
       randomConnectedGraph(size, locations),
       start, goal, heuristic, neighborDistance,
-      mori.sorted_set(), mori.set()
+      start, mori.set(), mori.sorted_set(), mori.set(),
+      mori.hash_map(), mori.vector()
     );
   };
 
   var stepAStar = function (state) {
+    if (mori.first(state.open)) {
+      if (mori.first(state.open) === goal) {
+        return recordUpdate(state, 'end', mori.first(state.open));
+      } else {
+        // magic
+      }
+    } else {
+      return null;
+    }
+  };
+
+  var recordUpdate = function (obj, key, val) {
+    var newObj = _.extend({}, obj);
+    newObj[key] = val;
+    return newObj;
   };
 
   var AStarState = function (
       graph, start, goal, heuristic,
-      neighborDistance, current, visited) {
-    this.graph = graph;
-    this.start = start;
-    this.goal = goal;
-    this.heuristic = heuristic;
+      neighborDistance, current, visited, 
+      open, closed, cameFrom, path, end) {
+    this.graph = graph; // id -> edges
+    this.start = start; // id of the start node
+    this.goal = goal; // id of the end node
+    this.heuristic = heuristic; // the heuristic function
     this.neighborDistance = neighborDistance;
-    this.visited = visited;
+    this.current = current;
+    this.visited = visited; // set of visited nodes.
+    this.open = open;
+    this.closed = closed;
+    this.cameFrom = cameFrom;
+    this.path = path;
+    this.end = end || null;
   };
 
   var randomGraphLocations = function (size) {
