@@ -2,34 +2,40 @@
 var App = {};
 
 (function (exports) {
-  var size = 500;
+  var size = 100;
   var source = 0;
   var goal = size - 1;
-  var maxEdgeDistance = 80;
+  var maxEdgeDistance = 100;
   var maxEdges = 10;
   var padding = 50; 
 
+  var svg;
+
   var init = function () {
-    var locations = randomGraphLocations();
+    initSvg();
+    var locations = randomGraphLocations(size);
     animate(
       mori.take_while(
         notNull,
         mori.iterate(
           stepAStar,
           startAStarState(
-            size,
-            locations,
-            source,
-            goal,
-            heuristic, // TODO: Implement
-            neighborDistance // TODO: Implement
+            size, // Size
+            locations, // Locations array - not passed to a-star
+            source, // Start index
+            goal, // Goal index
+            function (self) { // Heuristic
+              return locations[self].distance(locations[goal]);
+            },
+            function (self, other) { // Neighbor Distance
+              return locations[self].distance(locations[other]);
+            }
           ))),
       _.partial(animateGraphState, size, locations),
       150);
   };
 
   exports.init = init;
-
 
   var animate = function (animations, animationFunc, time) {
     if (mori.is_empty(animations)) {
@@ -45,11 +51,13 @@ var App = {};
   var notNull = function (x) { return x !== null; };
 
   var animateGraphState = function (size, locations, graphState) {
-    var d3Ids = d3.selectAll("circle").data(d3.range(size));
+    var d3Ids = svg.selectAll("circle").data(d3.range(size));
 
     d3Ids.enter().append("circle");
 
     d3Ids
+      .transition()
+      .duration(100)
       .attr("cx", function (id) {
         return locations[id].x;
       })
@@ -73,7 +81,7 @@ var App = {};
         } else if (graphState.goal === id) {
           return "red";
         } else {
-          return "blue";
+          return "black";
         }
       });
 
@@ -89,8 +97,7 @@ var App = {};
     );
   };
 
-  var stepAStar = function () {
-
+  var stepAStar = function (state) {
   };
 
   var AStarState = function (
@@ -116,7 +123,7 @@ var App = {};
     var connections = pack(size);
 
     _.times(size, function (id) {
-      pack[id] = undefined; // TODO: Implement edges. 
+      connections[id] = edgesFrom(id, locations);
     });
 
     return function (id) {
@@ -124,28 +131,30 @@ var App = {};
     };
   };
 
+  var edgesFrom = function (id, locations) {
+    var fromLocation = locations[id];
+    return _.reduce(locations, function (memo, location, otherId) {
+      return fromLocation.distance(location) < maxEdgeDistance ?
+        mori.conj(memo, otherId) :
+        memo;        
+    }, mori.set());
+  };
+
+  var initSvg = function () {
+    svg = d3.select("svg")
+      .attr("width", window.innerWidth)
+      .attr("height", window.innerHeight);
+  };
+
   var between = function (min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
   };
 
-  var pack = function (length, pack) {
+  var pack = function (length, packer) {
     var results = [];
     for (var i = 0; i < length; i++) {
-      results.push(pack);
+      results.push(packer);
     }
     return results;
   };
-
-//   var connectGraph = function (graph) {
-//     graph.nodes.each(function (from) {
-//       graph.nodes.each(function (to) {
-//         if (from.location.distance(to.location) < maxEdgeDistance &&
-//             from !== to && from.edges.length < maxEdges &&
-//             to.edges.length < maxEdges) {
-//           from.edgeToFrom(to);
-//         }
-//       });
-//     });
-//     return graph;
-//   };
 }(App));
