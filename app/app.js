@@ -2,6 +2,8 @@
 var App = {};
 
 (function (exports) {
+  var m = mori;
+
   var size = 100;
   var start = 0;
   var goal = size - 1;
@@ -17,9 +19,9 @@ var App = {};
 
     var locations = randomGraphLocations(size);
     animate( // While not done animate a-star
-      mori.take_while(
+      m.take_while(
         notDone,
-        mori.iterate(
+        m.iterate(
           runAStar(
             randomConnectedGraph(size, locations),
             start,
@@ -36,7 +38,8 @@ var App = {};
           initAStarState(start)
         )
       ),
-      _.partial(animateGraphState, size, locations), // Animator
+      _.partial(animateGraphState, size, locations, 
+        function (n) { return n === goal; }), // Animator
       150
     ); // Wait time
   };
@@ -44,13 +47,14 @@ var App = {};
   exports.init = init;
 
   var animate = function (animations, animationFunc, time) {
-    if (mori.is_empty(animations)) {
+    if (!m.first(animations)) {
       return;
     } else {
-      animationFunc(mori.first(animations));
-      setTimeout(_.partial(
-        animate, mori.rest(animations),
-        animationFunc, time));
+      animationFunc(m.first(animations));
+      setTimeout(function animateNext() {
+        animate(m.rest(animations),
+        animationFunc, time);
+      });
     }
   };
 
@@ -58,7 +62,7 @@ var App = {};
     return x !== null && x.end === null;
   };
 
-  var animateGraphState = function (size, locations, graphState) {
+  var animateGraphState = function (size, locations, goal, graphState) {
     var d3Ids = svg.selectAll("circle").data(d3.range(size));
 
     d3Ids.enter().append("circle");
@@ -75,7 +79,7 @@ var App = {};
       .attr("r", function (id) {
         if (graphState.current === id) {
           return 10;
-        } else if (graphState.goal === id) {
+        } else if (goal(id)) {
           return 10;
         } else {
           return 5;
@@ -84,9 +88,9 @@ var App = {};
       .style("fill", function (id) {
         if (graphState.current === id) {
           return "orange";
-        } else if (mori.has_key(graphState.visited, id)) {
+        } else if (m.has_key(graphState.closed, id)) {
           return "green";
-        } else if (graphState.goal === id) {
+        } else if (goal(id)) {
           return "red";
         } else {
           return "black";
@@ -98,12 +102,41 @@ var App = {};
 
   var runAStar = function (graph, start, goal, heuristic,
     neighborDistance) {
-    return function (state) {
-      if (mori.first(state.open)) {
-        if (goal(mori.first(state.open))) {
-          return recordUpdate(state, {end: mori.first(state.open)});
+
+    var expand = function (current, state, next) {
+      var cost = m.find(state.score, current) + 
+      neighborDistance(current, next);
+      if (m.find(state.open, next)) {
+        if (cost < m.find(state.score, next)) {
+          return link(current, next, cost, state);
         } else {
           return state;
+        }
+      } else {
+        return link(current, next, cost, state);
+      }
+    };
+
+    var link = function (current, next, cost, state) {
+      return recordUpdate(state, {
+        cameFrom: m.assoc(state.cameFrom, next, current),
+        score: m.assoc(state.score, next, cost),
+        open: m.conj(state.open, next)
+      });
+    };
+
+    return function (state) {
+      var current = m.first(state.open);
+      if (current) {
+        if (goal(current)) {
+          return recordUpdate(state, {end: current});
+        } else {
+          return m.reduce(
+            _.partial(expand, current),
+            recordUpdate(state, {open:    m.disj(state.open, current),
+                                 closed: m.conj(state.closed, current)}),
+            mori.difference(graph(current), state.closed)
+          );
         }
       } else {
         return null;
@@ -113,7 +146,9 @@ var App = {};
 
   var recordUpdate = function (obj, pairs) {
     var newObj = _.extend({}, obj);
-    newObj[key] = val;
+    _.each(pairs, function (val, key) {
+      newObj[key] = val;
+    });
     return newObj;
   };
 
@@ -131,12 +166,12 @@ var App = {};
   var initAStarState = function (start) {
     return new AStarState({
       current: start,
-      visited: mori.set([start]),
-      score: mori.hash_map([start, 0]),
-      open: mori.sorted_set([start]),
-      closed: mori.set(),
-      cameFrom: mori.hash_map([start, null]),
-      path: mori.vector(),
+      visited: m.set([start]),
+      score: m.hash_map([start, 0]),
+      open: m.sorted_set([start]),
+      closed: m.set(),
+      cameFrom: m.hash_map([start, null]),
+      path: m.vector(),
       end: null
     });
   };
@@ -156,8 +191,8 @@ var App = {};
       connections[id] = edgesFrom(id, locations);
     });
 
-    return function (id) {
-      return connections.get(id);
+    return function graph (id) {
+      return connections[id];
     };
   };
 
@@ -165,9 +200,9 @@ var App = {};
     var fromLocation = locations[id];
     return _.reduce(locations, function (memo, location, otherId) {
       return fromLocation.distance(location) < maxEdgeDistance ?
-        mori.conj(memo, otherId) :
+        m.conj(memo, otherId) :
         memo;
-    }, mori.set());
+    }, m.set());
   };
 
   var initSvg = function () {};
