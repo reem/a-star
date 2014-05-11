@@ -38,9 +38,9 @@ var App = {};
           initAStarState(start)
         )
       ),
-      _.partial(animateGraphState, size, locations, 
+      _.partial(animateGraphState, size, locations,
         function (n) { return n === goal; }), // Animator
-      150
+      500
     ); // Wait time
   };
 
@@ -54,7 +54,7 @@ var App = {};
       setTimeout(function animateNext() {
         animate(m.rest(animations),
         animationFunc, time);
-      });
+      }, time);
     }
   };
 
@@ -68,8 +68,8 @@ var App = {};
     d3Ids.enter().append("circle");
 
     d3Ids
-      .transition()
-      .duration(100)
+     .transition()
+     .duration(250)
       .attr("cx", function (id) {
         return locations[id].x;
       })
@@ -88,7 +88,7 @@ var App = {};
       .style("fill", function (id) {
         if (graphState.current === id) {
           return "orange";
-        } else if (m.has_key(graphState.closed, id)) {
+        } else if (m.has_key(graphState.visited, id)) {
           return "green";
         } else if (goal(id)) {
           return "red";
@@ -104,7 +104,7 @@ var App = {};
     neighborDistance) {
 
     var expand = function (current, state, next) {
-      var cost = m.find(state.score, current) + 
+      var cost = m.find(state.score, current) +
       neighborDistance(current, next);
       if (m.find(state.open, next)) {
         if (cost < m.find(state.score, next)) {
@@ -121,21 +121,23 @@ var App = {};
       return recordUpdate(state, {
         cameFrom: m.assoc(state.cameFrom, next, current),
         score: m.assoc(state.score, next, cost),
-        open: m.conj(state.open, next)
+        open: m.conj(state.open, next),
       });
     };
 
     return function (state) {
       var current = m.first(state.open);
-      if (current) {
+      if (current !== null) {
         if (goal(current)) {
-          return recordUpdate(state, {end: current});
+          return recordUpdate(state, {end: current, current: current});
         } else {
           return m.reduce(
             _.partial(expand, current),
             recordUpdate(state, {open:    m.disj(state.open, current),
-                                 closed: m.conj(state.closed, current)}),
-            mori.difference(graph(current), state.closed)
+                                 closed: m.conj(state.closed, current),
+                                 visited: m.conj(state.visited, current),
+                                 current: current}),
+            m.difference(graph(current), state.closed)
           );
         }
       } else {
