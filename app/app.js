@@ -1,192 +1,223 @@
-/* globals AStar, d3, console, Post, Graph, Vector, _, window */
+/* globals mori, d3, console, Vector, _, window, setTimeout */
 var App = {};
 
 (function (exports) {
-  var svg;
-  var size = 500;
-  var source = 0;
+  var m = mori;
+
+  var size = 100;
+  var start = 0;
   var goal = size - 1;
-  var maxEdgeDistance = 80;
+  var maxEdgeDistance = 100;
   var maxEdges = 10;
+  var padding = 50;
 
+  var svg;
   var init = function () {
-    var graph = connectGraph(randomGraph(size));
-    initSvg();
-    d3Edges(graph);
-    d3Graph(graph);
+    svg = d3.select("svg")
+      .attr("width", window.innerWidth)
+      .attr("height", window.innerHeight);
 
-    var eventer = new Post.EventManager(200);
-    // eventer.register('current', d3Current);
-    // eventer.register('neighbor', d3Neighbor);
-    eventer.register('graph', d3Graph);
-    eventer.init();
-    // eventer.register('edge', d3CurrentEdge);
-
-    //AStar.greedy(graph, source, goal, eventer);
-    AStar.BFS(graph, source, goal, eventer);
-    //AStar.DFS(graph, source, goal, eventer);
+    var locations = randomGraphLocations(size);
+    animate( // While not done animate a-star
+      m.take_while(
+        notDone,
+        m.iterate(
+          runAStar(
+            randomConnectedGraph(size, locations),
+            start,
+            function (n) {
+              return n === goal;
+            },
+            function (self) { // Heuristic
+              return locations[self].distance(locations[goal]);
+            },
+            function (self, other) { // Neighbor Distance
+              return locations[self].distance(locations[other]);
+            }
+          ),
+          initAStarState(start)
+        )
+      ),
+      _.partial(animateGraphState, size, locations,
+        function (n) { return n === goal; }), // Animator
+      500
+    ); // Wait time
   };
 
   exports.init = init;
 
-  var initSvg = function () {
-    svg = d3.select("body").append("svg");
+  var animate = function (animations, animationFunc, time) {
+    if (!m.first(animations)) {
+      return;
+    } else {
+      animationFunc(m.first(animations));
+      setTimeout(function animateNext() {
+        animate(m.rest(animations),
+        animationFunc, time);
+      }, time);
+    }
   };
 
-  var d3Graph = function (graph) {
-    var d3nodes = svg.selectAll("circle")
-      .data(graph.nodes.toList());
+  var notDone = function (x) {
+    return x !== null && x.end === null;
+  };
 
-    d3nodes.enter().append("circle");
+  var animateGraphState = function (size, locations, goal, graphState) {
+    var d3Ids = svg.selectAll("circle").data(d3.range(size));
 
-    d3nodes
-      .attr("cx", function (d) { return d.location.x; })
-      .attr("cy", function (d) { return d.location.y; })
-      .attr("r",  function (d) {
-        if (d.id === source) {
+    d3Ids.enter().append("circle");
+
+    d3Ids
+     .transition()
+     .duration(250)
+      .attr("cx", function (id) {
+        return locations[id].x;
+      })
+      .attr("cy", function (id) {
+        return locations[id].y;
+      })
+      .attr("r", function (id) {
+        if (graphState.current === id) {
           return 10;
-        } else if (d.id === goal) {
-          return 10;
-        } else if (d.current) {
+        } else if (goal(id)) {
           return 10;
         } else {
           return 5;
         }
       })
-      .style("fill", function (d) {
-        if (d.id === goal) {
-          if (d.current)
-            return "blue";
-          else
-            return "red";
+      .style("fill", function (id) {
+        if (graphState.current === id) {
+          return "orange";
+        } else if (m.has_key(graphState.visited, id)) {
+          return "green";
+        } else if (goal(id)) {
+          return "red";
         } else {
-          if (d.current) {
-            return "orange";
-          } else if (d.onPath) {
-            return "blue";
-          } else if (d.visited) {
-            return "orange";
-          } else {
-            return "black";
-          }
+          return "black";
         }
       });
 
-    d3nodes.exit().remove();
+    d3Ids.exit().remove();
   };
 
-  var d3Edges = function (graph) {
-    var edges = new Set.Set();
-    graph.nodes.each(function (from) {
-      graph.nodes.each(function (to) {
-        if (from.edges.contains(to)) {
-          edges.insert(new Vector.Vector(from, to));
+  var runAStar = function (graph, start, goal, heuristic,
+    neighborDistance) {
+
+    var expand = function (current, state, next) {
+      var cost = m.find(state.score, current) +
+      neighborDistance(current, next);
+      if (m.find(state.open, next)) {
+        if (cost < m.find(state.score, next)) {
+          return link(current, next, cost, state);
+        } else {
+          return state;
         }
+      } else {
+        return link(current, next, cost, state);
+      }
+    };
+
+    var link = function (current, next, cost, state) {
+      return recordUpdate(state, {
+        cameFrom: m.assoc(state.cameFrom, next, current),
+        score: m.assoc(state.score, next, cost),
+        open: m.conj(state.open, next),
       });
-    });
+    };
 
-    var d3edges = svg.selectAll("line")
-      .data(edges.toList());
-
-    d3edges.enter().append("line");
-
-    d3edges
-      .attr("x1", function (d) {
-        return d.x.location.x;
-      })
-      .attr("y1", function (d) {
-        return d.x.location.y;
-      })
-      .attr("x2", function (d) {
-        return d.y.location.x;
-      })
-      .attr("y2", function (d) {
-        return d.y.location.y;
-      })
-      .style("stroke", "rgb(6,120,155)");
-
-    d3edges.exit().remove();
-  };
-
-  var d3Current = function (node) {
-    var d3node = svg.select('circle').data([node]);
-
-    d3node.enter().append('circle');
-
-    d3node
-      .attr("cx", function (d) {
-        return d.location.x;
-      })
-      .attr("cy", function (d) {
-        return d.location.y;
-      })
-      .attr("r", 12)
-      .style("fill", "orange");
-  };
-
-  var d3Neighbor = function (neighbor) {
-    var d3node = svg.select('circle').data([neighbor]);
-
-    d3node.enter().append('circle');
-
-    d3node
-      .attr("cx", function (d) {
-        return d.node.location.x;
-      })
-      .attr("cy", function (d) {
-        return d.node.location.y;
-      })
-      .attr("r", 10)
-      .style("fill", "green");
-  };
-
-  var d3CurrentEdge = function (edge) {
-    var d3edge = svg.select("line")
-      .data([edge]);
-
-    d3edge.enter().append("line");
-
-    d3edge
-      .attr("x1", function (d) {
-        return d.x.location.x;
-      })
-      .attr("y1", function (d) {
-        return d.x.location.y;
-      })
-      .attr("x2", function (d) {
-        return d.y.location.x;
-      })
-      .attr("y2", function (d) {
-        return d.y.location.y;
-      })
-      .style("stroke", "rgb(255,0,0)");
-
-    d3edge.exit().remove();
-  };
-
-  var connectGraph = function (graph) {
-    graph.nodes.each(function (from) {
-      graph.nodes.each(function (to) {
-        if (from.location.distance(to.location) < maxEdgeDistance &&
-            from !== to && from.edges.length < maxEdges &&
-            to.edges.length < maxEdges) {
-          from.edgeToFrom(to);
+    return function (state) {
+      var current = m.first(state.open);
+      if (current !== null) {
+        if (goal(current)) {
+          return recordUpdate(state, {end: current, current: current});
+        } else {
+          return m.reduce(
+            _.partial(expand, current),
+            recordUpdate(state, {open:    m.disj(state.open, current),
+                                 closed: m.conj(state.closed, current),
+                                 visited: m.conj(state.visited, current),
+                                 current: current}),
+            m.difference(graph(current), state.closed)
+          );
         }
-      });
-    });
-    return graph;
+      } else {
+        return null;
+      }
+    };
   };
 
-  var randomGraph = function (size) {
-    var graph = new Graph.Graph();
-    _.times(size, function () {
-      graph.addNode(new Graph.PlanarNode({
-        location: {
-          x: (window.innerWidth - 100)  * Math.random() + 50,
-          y: (window.innerHeight - 100) * Math.random() + 50,
-        }
-      }));
+  var recordUpdate = function (obj, pairs) {
+    var newObj = _.extend({}, obj);
+    _.each(pairs, function (val, key) {
+      newObj[key] = val;
     });
-    return graph;
+    return newObj;
+  };
+
+  var AStarState = function (config) {
+    this.current = config.current;
+    this.visited = config.visited; // set of visited nodes.
+    this.score = config.score;
+    this.open = config.open;
+    this.closed = config.closed;
+    this.cameFrom = config.cameFrom;
+    this.path = config.path;
+    this.end = config.end;
+  };
+
+  var initAStarState = function (start) {
+    return new AStarState({
+      current: start,
+      visited: m.set([start]),
+      score: m.hash_map([start, 0]),
+      open: m.sorted_set([start]),
+      closed: m.set(),
+      cameFrom: m.hash_map([start, null]),
+      path: m.vector(),
+      end: null
+    });
+  };
+
+  var randomGraphLocations = function (size) {
+    return d3.range(size).map(function () {
+      return new Vector.Vector(
+        between(padding, window.innerWidth - padding),
+        between(padding, window.innerHeight - padding));
+    });
+  };
+
+  var randomConnectedGraph = function (size, locations) {
+    var connections = pack(size);
+
+    _.times(size, function (id) {
+      connections[id] = edgesFrom(id, locations);
+    });
+
+    return function graph (id) {
+      return connections[id];
+    };
+  };
+
+  var edgesFrom = function (id, locations) {
+    var fromLocation = locations[id];
+    return _.reduce(locations, function (memo, location, otherId) {
+      return fromLocation.distance(location) < maxEdgeDistance ?
+        m.conj(memo, otherId) :
+        memo;
+    }, m.set());
+  };
+
+  var initSvg = function () {};
+
+  var between = function (min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  };
+
+  var pack = function (length, packer) {
+    var results = [];
+    for (var i = 0; i < length; i++) {
+      results.push(packer);
+    }
+    return results;
   };
 }(App));
